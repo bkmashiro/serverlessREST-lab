@@ -1,6 +1,6 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
 
 const ddbDocClient = createDDbDocClient();
@@ -10,6 +10,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
   try {
     console.log("[EVENT]", JSON.stringify(event));
     const pathParameters = event?.pathParameters;
+    const queryParameters = event?.queryStringParameters; // ?cast=true means we want to get the cast members
+
     const movieId = pathParameters?.movieId
       ? parseInt(pathParameters.movieId)
       : undefined;
@@ -26,7 +28,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
 
     const commandOutput = await ddbDocClient.send(
       new GetCommand({
-        TableName: process.env.TABLE_NAME,
+        TableName: process.env.MOVIE_TABLE_NAME,
         Key: { id: movieId },
       })
     );
@@ -40,6 +42,23 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
         body: JSON.stringify({ Message: "Invalid movie Id" }),
       };
     }
+
+    let castData: any[] = [];
+    if (queryParameters?.cast === "true") {
+      const castCommandOutput = await ddbDocClient.send(
+        new QueryCommand({
+          TableName: process.env.CAST_TABLE_NAME,
+          IndexName: "roleIx",
+          KeyConditionExpression: "movieId = :m",
+          ExpressionAttributeValues: {
+            ":m": { N: movieId.toString() },
+          },
+        })
+      );
+      console.log("QueryCommand response: ", castCommandOutput);
+      castData = castCommandOutput.Items || [];
+    }
+
     const body = {
       data: commandOutput.Item,
     };
@@ -50,7 +69,10 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body:
+        castData.length > 0
+          ? JSON.stringify({ ...body, castData })
+          : JSON.stringify(body),
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));

@@ -5,7 +5,7 @@ export const movies: Movie[] = [
     adult: false,
     backdrop_path: "/sRLC052ieEzkQs9dEtPMfFxYkej.jpg",
     genre_ids: [878],
-    id: 848326,
+    id: 1234,
     original_language: "en",
     original_title: "Rebel Moon - Part One: A Child of Fire",
     overview:
@@ -22,7 +22,7 @@ export const movies: Movie[] = [
     adult: false,
     backdrop_path: "/jXJxMcVoEuXzym3vFnjqDW4ifo6.jpg",
     genre_ids: [28, 12, 14],
-    id: 572802,
+    id: 2345,
     original_language: "en",
     original_title: "Aquaman and the Lost Kingdom",
     overview:
